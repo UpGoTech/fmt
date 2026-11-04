@@ -53,22 +53,6 @@ services:
     depends_on:
       - backend
       - websocket
-    networks: [default, proxy]
-    labels:
-      - traefik.enable=true
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
-      - "traefik.http.services.${SLUG}.loadbalancer.server.port=8080"
-      - "traefik.http.routers.${SLUG}-https.rule=Host(`${SITE}`)"
-      - "traefik.http.routers.${SLUG}-https.entrypoints=${TRAEFIK_ENTRYPOINT_SECURE}"
-      - "traefik.http.routers.${SLUG}-https.tls=true"
-      - "traefik.http.routers.${SLUG}-https.tls.certresolver=${TRAEFIK_CERTRESOLVER}"
-      - "traefik.http.routers.${SLUG}-https.service=${SLUG}"
-      - "traefik.http.routers.${SLUG}-http.rule=Host(`${SITE}`)"
-      - "traefik.http.routers.${SLUG}-http.entrypoints=${TRAEFIK_ENTRYPOINT_WEB}"
-      - "traefik.http.routers.${SLUG}-http.middlewares=${SLUG}-redirect"
-      - "traefik.http.routers.${SLUG}-http.service=${SLUG}"
-      - "traefik.http.middlewares.${SLUG}-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.${SLUG}-redirect.redirectscheme.permanent=true"
 
   websocket:
     <<: [*frappe, *after_configurator]
@@ -133,8 +117,3 @@ volumes:
   logs:
   db-data:
   redis-queue-data:
-
-networks:
-  proxy:
-    external: true
-    name: ${TRAEFIK_NETWORK}

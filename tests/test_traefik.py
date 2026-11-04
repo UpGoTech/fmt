@@ -25,3 +25,11 @@ def test_detect_uses_custom_network(monkeypatch):
     monkeypatch.setattr(traefik, "output", fake_output)
     config = TraefikDetector().detect(certresolver="mine")
     assert (config.network, config.certresolver) == ("web", "mine")
+
+
+def test_installer_renders_acme_only_with_email(tmp_path):
+    from fmt.traefik_install import TraefikInstaller
+    installer = TraefikInstaller(tmp_path)
+    assert "acme.email=me@x.io" in installer.render("me@x.io")
+    assert "certificatesresolvers" not in installer.render("")
+    assert "name: fmt-proxy" in installer.render("")

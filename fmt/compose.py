@@ -11,8 +11,12 @@ class ComposeProject:
             "docker", "compose", "-p", self.site.slug,
             "--project-directory", str(directory),
             "--env-file", str(directory / ".env"),
-            "-f", str(self.site.compose_path), *arguments,
+            *self._files(), *arguments,
         ]
+
+    def _files(self):
+        paths = [self.site.compose_path, self.site.routing_path]
+        return [item for path in paths if path.exists() for item in ("-f", str(path))]
 
     def run(self, *arguments, **options):
         return run(self.command(*arguments), **options)

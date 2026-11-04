@@ -8,6 +8,10 @@ PROXY_NETWORK = "fmt-proxy"
 IGNORED_NETWORKS = {"bridge", "host", "none"}
 
 
+class TraefikNotFound(FmtError):
+    pass
+
+
 @dataclass
 class TraefikConfig:
     network: str
@@ -35,7 +39,7 @@ class TraefikDetector:
             name, _, image = line.partition(" ")
             if "traefik" in image.lower():
                 return name
-        raise FmtError("No running Traefik container found. Start Traefik first.")
+        raise TraefikNotFound("No running Traefik container found.")
 
     def detect(self, network=None, certresolver=None):
         container = self.find_container()

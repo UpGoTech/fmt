@@ -56,6 +56,15 @@ class Site:
         return self.directory / "compose.yaml"
 
     @property
+    def routing_path(self):
+        return self.directory / "compose.traefik.yaml"
+
+    @property
+    def url(self):
+        scheme = "https" if self.env.read().get("SSL", "true") == "true" else "http"
+        return f"{scheme}://{self.name}"
+
+    @property
     def env(self):
         return EnvFile(self.directory / ".env")
 

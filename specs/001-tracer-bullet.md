@@ -23,3 +23,9 @@ Backup -> build/pull new image -> maintenance on, stop workers -> `bench migrate
 
 ## SSL
 Router labels with `tls.certresolver`; HTTP router redirects to HTTPS and serves ACME HTTP-01. `ssl status` reads the live certificate expiry; `doctor` checks Traefik, resolver and port reachability.
+
+## Addendum: local mode and Traefik bootstrap
+- Routing labels live in a generated `compose.traefik.yaml` override (JSON), not in the base compose. Sites created before this change keep labels in `compose.yaml` and still work.
+- Local mode (`--local`, auto for `.localhost/.test/.local/.internal`): plain HTTP router on the web entrypoint, no resolver, no DNS check, `host_name` is `http://`, liveness probed via `127.0.0.1` with a Host header.
+- `--strict-dns` aborts on a DNS mismatch instead of warning.
+- No running Traefik: prompt to install (`--install-traefik` skips the prompt, `fmt traefik install` does it standalone). Installs `traefik:v3.6` in `$FMT_HOME/traefik` on network `fmt-proxy`, with Let's Encrypt HTTP-01 when an email is given. Declining exits with an error.
