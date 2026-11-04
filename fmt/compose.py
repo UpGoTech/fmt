@@ -1,6 +1,9 @@
 from fmt.process import output, run
 
 
+EXPECTED_SERVICES = 9  # long-running services; the configurator exits after setup
+
+
 class ComposeProject:
     def __init__(self, site):
         self.site = site

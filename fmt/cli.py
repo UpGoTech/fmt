@@ -2,9 +2,9 @@ from typing import List, Optional
 
 import typer
 
-from fmt.compose import ComposeProject
+from fmt.compose import EXPECTED_SERVICES, ComposeProject
 from fmt.creator import SiteCreator
-from fmt.display import STATUS_STYLES, console, details_table, sites_table
+from fmt.display import console, details_table, sites_table, status_label
 from fmt.process import FmtError
 from fmt.routing import is_local_domain
 from fmt.site import Site, fmt_home
@@ -83,7 +83,7 @@ def traefik_install(email: Optional[str] = typer.Option(None, help="Let's Encryp
 @app.command("list")
 def list_sites():
     """Show all sites."""
-    rows = [(site.name, ComposeProject(site).running_count() > 0, site.directory)
+    rows = [(site.name, ComposeProject(site).running_count(), EXPECTED_SERVICES, site.directory)
             for site in Site.all()]
     console.print(sites_table(rows))
 
@@ -93,9 +93,9 @@ def info(name: str):
     """Show URL, directory, image and apps of a site."""
     site, compose = load(name)
     values = site.env.read()
-    active = compose.running_count() > 0
+    status, _ = status_label(compose.running_count(), EXPECTED_SERVICES)
     console.print(details_table([
-        ("Site", site.url), ("Status", STATUS_STYLES[active][0]), ("Directory", site.directory),
+        ("Site", site.url), ("Status", status), ("Directory", site.directory),
         ("Image", values["IMAGE"]), ("Apps", values["APPS"].replace(",", ", ")),
         ("Admin password", f"initial one is in {site.directory}/.env"),
     ]))
