@@ -54,7 +54,9 @@ Sites live in `/opt/fmt/<site>` (override with `FMT_HOME`).
 - [Apps and versions](docs/apps.md)
 - [SSL and renewal](docs/ssl.md)
 - [Backups and upgrades](docs/upgrading.md)
+- [Traefik requirements and setup](docs/traefik.md)
 - [Local development](docs/local.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
 ## Differences from Frappe Manager
 
