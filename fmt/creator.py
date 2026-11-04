@@ -94,10 +94,12 @@ class SiteCreator:
                                       headers={"Host": self.site.name})
 
     def _wait_until_live(self, attempts=40):
+        self.last_error = None
         for _ in range(attempts):
             try:
                 if urllib.request.urlopen(self._request(), timeout=5).status == 200:
                     return True
-            except OSError:
-                time.sleep(4)
+            except OSError as error:
+                self.last_error = error
+            time.sleep(4)
         return False

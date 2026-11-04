@@ -4,7 +4,7 @@ import urllib.request
 
 def public_address():
     try:
-        return urllib.request.urlopen("https://ifconfig.me/ip", timeout=5).read().decode().strip()
+        return urllib.request.urlopen("https://api.ipify.org", timeout=5).read().decode().strip()
     except OSError:
         return None
 

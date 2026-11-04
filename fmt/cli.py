@@ -64,7 +64,8 @@ def create(
     if is_local:
         typer.echo(f"Add to /etc/hosts if the name does not resolve: 127.0.0.1 {creator.site.name}")
     if not live:
-        typer.echo("warn: ping not OK yet; check DNS, 'fmt logs' and Traefik logs.", err=True)
+        typer.echo(f"warn: ping not OK yet ({creator.last_error}). Run 'fmt doctor', "
+                   f"'fmt ssl status {creator.site.name}' and check the Traefik logs.", err=True)
 
 
 traefik_app = typer.Typer(help="Manage the Traefik reverse proxy.")
