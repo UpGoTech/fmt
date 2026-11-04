@@ -24,9 +24,9 @@ class ComposeProject:
     def run(self, *arguments, **options):
         return run(self.command(*arguments), **options)
 
-    def bench(self, *arguments, service="backend", tty=False):
+    def bench(self, *arguments, service="backend", tty=False, **options):
         flags = [] if tty else ["-T"]
-        return self.run("exec", *flags, service, "bench", *arguments)
+        return self.run("exec", *flags, service, "bench", *arguments, **options)
 
     def one_off(self, script, **environment):
         flags = [item for key, value in environment.items() for item in ("-e", f"{key}={value}")]

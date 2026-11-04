@@ -2,9 +2,11 @@ from typing import List, Optional
 
 import typer
 
+from fmt import cli_checks, cli_ops
 from fmt.compose import EXPECTED_SERVICES, ComposeProject
 from fmt.creator import SiteCreator
 from fmt.display import console, details_table, sites_table, status_label
+from fmt.loader import load
 from fmt.process import FmtError
 from fmt.routing import is_local_domain
 from fmt.site import Site, fmt_home
@@ -13,11 +15,6 @@ from fmt.traefik_install import TraefikInstaller
 
 app = typer.Typer(help="Frappe Manager - Traefik: production Frappe sites on Docker + Traefik.",
                   no_args_is_help=True)
-
-
-def load(name):
-    site = Site(name).require_existing()
-    return site, ComposeProject(site)
 
 
 def install_traefik(email, local):
@@ -145,6 +142,10 @@ def delete(name: str):
         raise FmtError("aborted")
     compose.run("down", "-v", "--remove-orphans")
     site.remove()
+
+
+app.add_typer(cli_ops.ops)
+app.add_typer(cli_checks.checks)
 
 
 def main():

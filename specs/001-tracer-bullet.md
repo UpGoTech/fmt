@@ -29,3 +29,9 @@ Router labels with `tls.certresolver`; HTTP router redirects to HTTPS and serves
 - Local mode (`--local`, auto for `.localhost/.test/.local/.internal`): plain HTTP router on the web entrypoint, no resolver, no DNS check, `host_name` is `http://`, liveness probed via `127.0.0.1` with a Host header.
 - `--strict-dns` aborts on a DNS mismatch instead of warning.
 - No running Traefik: prompt to install (`--install-traefik` skips the prompt, `fmt traefik install` does it standalone). Installs `traefik:v3.6` in `$FMT_HOME/traefik` on network `fmt-proxy`, with Let's Encrypt HTTP-01 when an email is given. Declining exits with an error.
+
+## Addendum: implementation notes
+- `update` recreates containers on the new image under maintenance mode and then migrates (instead of a one-off migrate before switching).
+- The sites volume hides the image's built assets, so `update`/`rollback` copy `sites/assets` from the new image into the volume.
+- Backups record `state.env` (image, frappe ref, apps) so `rollback` can restore the old image together with the data.
+- `clone` copies the source `encryption_key` into the new site before restoring.

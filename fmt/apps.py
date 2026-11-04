@@ -68,23 +68,23 @@ class ImageBuilder:
     def __init__(self, cache_directory):
         self.repository = Path(cache_directory) / "frappe_docker"
 
-    def ensure(self, resolver):
+    def ensure(self, resolver, fresh=False):
         if resolver.is_official:
             run(["docker", "pull", resolver.image])
-        elif not self._exists(resolver.image):
-            self._build(resolver)
+        elif fresh or not self._exists(resolver.image):
+            self._build(resolver, fresh)
 
     def _exists(self, image):
         return run(["docker", "image", "inspect", image], check=False, capture=True).returncode == 0
 
-    def _build(self, resolver):
+    def _build(self, resolver, fresh=False):
         self._update_repository()
         encoded = base64.b64encode(resolver.apps_json.encode()).decode()
-        run(self._build_command(resolver, encoded))
+        run(self._build_command(resolver, encoded, fresh))
 
-    def _build_command(self, resolver, encoded):
+    def _build_command(self, resolver, encoded, fresh=False):
         return [
-            "docker", "build", "--file", str(self.repository / "images/layered/Containerfile"),
+            "docker", "build", *(["--no-cache", "--pull"] if fresh else []), "--file", str(self.repository / "images/layered/Containerfile"),
             "--build-arg", f"FRAPPE_BRANCH={resolver.frappe_ref}",
             "--build-arg", f"APPS_JSON_BASE64={encoded}",
             "--tag", resolver.image, str(self.repository),
