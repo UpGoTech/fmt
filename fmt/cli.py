@@ -4,6 +4,7 @@ import typer
 
 from fmt.compose import ComposeProject
 from fmt.creator import SiteCreator
+from fmt.display import STATUS_STYLES, console, details_table, sites_table
 from fmt.process import FmtError
 from fmt.routing import is_local_domain
 from fmt.site import Site, fmt_home
@@ -59,8 +60,10 @@ def create(
     traefik = locate_traefik(network, resolver, is_local, install_traefik_if_missing, acme_email)
     creator = SiteCreator(name, frappe, apps, admin_password, traefik, is_local, strict_dns)
     live = creator.create()
-    typer.echo(f"\nURL: {creator.url}\nLogin: Administrator\n"
-               f"Password: {creator.admin_password}\nDirectory: {creator.site.directory}")
+    console.print(details_table([
+        ("URL", creator.url), ("Login", "Administrator"),
+        ("Password", creator.admin_password), ("Directory", creator.site.directory),
+    ]))
     if is_local:
         typer.echo(f"Add to /etc/hosts if the name does not resolve: 127.0.0.1 {creator.site.name}")
     if not live:
@@ -80,18 +83,22 @@ def traefik_install(email: Optional[str] = typer.Option(None, help="Let's Encryp
 @app.command("list")
 def list_sites():
     """Show all sites."""
-    for site in Site.all():
-        running = ComposeProject(site).running_count()
-        typer.echo(f"{site.name:<38} {running}/9  {site.env.read()['IMAGE']}")
+    rows = [(site.name, ComposeProject(site).running_count() > 0, site.directory)
+            for site in Site.all()]
+    console.print(sites_table(rows))
 
 
 @app.command()
 def info(name: str):
-    """Show URL, directory and image of a site."""
-    site, _ = load(name)
+    """Show URL, directory, image and apps of a site."""
+    site, compose = load(name)
     values = site.env.read()
-    typer.echo(f"Site: {site.url}\nDirectory: {site.directory}\nImage: {values['IMAGE']}\n"
-               f"Apps: {values['APPS']}\nInitial admin password: in {site.directory}/.env")
+    active = compose.running_count() > 0
+    console.print(details_table([
+        ("Site", site.url), ("Status", STATUS_STYLES[active][0]), ("Directory", site.directory),
+        ("Image", values["IMAGE"]), ("Apps", values["APPS"].replace(",", ", ")),
+        ("Admin password", f"initial one is in {site.directory}/.env"),
+    ]))
 
 
 @app.command()

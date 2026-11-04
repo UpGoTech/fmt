@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Frappe Manager - Traefik: production Frappe/ERPNext/HRMS sites on Docker + Traefik"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["typer>=0.12"]
+dependencies = ["typer>=0.12", "rich>=13"]
 
 [project.scripts]
 fmt = "fmt.cli:main"
