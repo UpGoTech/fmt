@@ -1,0 +1,140 @@
+x-frappe: &frappe
+  image: ${IMAGE}
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+  volumes:
+    - sites:/home/frappe/frappe-bench/sites
+    - logs:/home/frappe/frappe-bench/logs
+
+x-after-configurator: &after_configurator
+  depends_on:
+    configurator:
+      condition: service_completed_successfully
+
+services:
+  configurator:
+    <<: *frappe
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host $$DB_HOST;
+        bench set-config -gp db_port $$DB_PORT;
+        bench set-config -g redis_cache "redis://$$REDIS_CACHE";
+        bench set-config -g redis_queue "redis://$$REDIS_QUEUE";
+        bench set-config -g redis_socketio "redis://$$REDIS_QUEUE";
+        bench set-config -gp socketio_port $$SOCKETIO_PORT;
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
+      SOCKETIO_PORT: "9000"
+    depends_on: {}
+
+  backend:
+    <<: [*frappe, *after_configurator]
+
+  frontend:
+    <<: [*frappe, *after_configurator]
+    command: nginx-entrypoint.sh
+    environment:
+      BACKEND: backend:8000
+      SOCKETIO: websocket:9000
+      FRAPPE_SITE_NAME_HEADER: ${SITE}
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+      PROXY_READ_TIMEOUT: "120"
+      CLIENT_MAX_BODY_SIZE: 50m
+    depends_on:
+      - backend
+      - websocket
+    networks: [default, proxy]
+    labels:
+      - traefik.enable=true
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.http.services.${SLUG}.loadbalancer.server.port=8080"
+      - "traefik.http.routers.${SLUG}-https.rule=Host(`${SITE}`)"
+      - "traefik.http.routers.${SLUG}-https.entrypoints=${TRAEFIK_ENTRYPOINT_SECURE}"
+      - "traefik.http.routers.${SLUG}-https.tls=true"
+      - "traefik.http.routers.${SLUG}-https.tls.certresolver=${TRAEFIK_CERTRESOLVER}"
+      - "traefik.http.routers.${SLUG}-https.service=${SLUG}"
+      - "traefik.http.routers.${SLUG}-http.rule=Host(`${SITE}`)"
+      - "traefik.http.routers.${SLUG}-http.entrypoints=${TRAEFIK_ENTRYPOINT_WEB}"
+      - "traefik.http.routers.${SLUG}-http.middlewares=${SLUG}-redirect"
+      - "traefik.http.routers.${SLUG}-http.service=${SLUG}"
+      - "traefik.http.middlewares.${SLUG}-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.${SLUG}-redirect.redirectscheme.permanent=true"
+
+  websocket:
+    <<: [*frappe, *after_configurator]
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+
+  queue-short:
+    <<: [*frappe, *after_configurator]
+    command: ["bench", "worker", "--queue", "short,default"]
+
+  queue-long:
+    <<: [*frappe, *after_configurator]
+    command: ["bench", "worker", "--queue", "long,default,short"]
+
+  scheduler:
+    <<: [*frappe, *after_configurator]
+    command: ["bench", "schedule"]
+
+  db:
+    image: ${DB_IMAGE}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --innodb-buffer-pool-size=${DB_BUFFER_POOL}
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis-cache:
+    image: ${REDIS_IMAGE}
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  redis-queue:
+    image: ${REDIS_IMAGE}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+    volumes:
+      - redis-queue-data:/data
+
+volumes:
+  sites:
+  logs:
+  db-data:
+  redis-queue-data:
+
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}
