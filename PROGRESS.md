@@ -1,6 +1,6 @@
 # Progress
 
-All phases are implemented and unit tested (31 tests). Nothing below has been run end to end on a real VPS yet.
+All phases are implemented and unit tested (31 tests).
 
 - [x] 1. create, local mode, strict DNS, Traefik bootstrap
 - [x] 2. list, info, start, stop, restart, logs, shell, bench, delete
@@ -9,4 +9,5 @@ All phases are implemented and unit tested (31 tests). Nothing below has been ru
 - [x] 5. ssl status, doctor
 - [x] 6. install.sh, README, docs, CI
 
-Next: verify on a VPS (create, apps add, update, rollback, clone), fix findings.
+Verified on a VPS: create, Traefik detection, doctor, ssl status, Let's Encrypt issuance (after a DNS-propagation retry). Still to verify: apps add, update, rollback, backup, restore, clone.
+Next: `fmt ssl retry`, public-resolver DNS check, then the unverified commands above.
